@@ -33,7 +33,7 @@ def train(data_loader, data_size, batch_size, embedding_dim, hidden_dim,
     train_history_image_path:  训练数据的相关图片保存路径
     '''
     # 将中文字符和id的对应码表加载进内存
-    char2id = json.load(open("E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/ner_model/data/char_to_id.json", mode="r", encoding="utf-8"))
+    char2id = json.load(open("E:/BaiduNetdiskDownload/project/AI_doctor/offline/ner_model/data/char_to_id.json", mode="r", encoding="utf-8"))
     # 初始化BiLSTM_CRF模型
     model = BiLSTM_CRF(vocab_size=len(char2id), tag_to_ix=tag2id,
                    embedding_dim=embedding_dim, hidden_dim=hidden_dim,
@@ -294,7 +294,7 @@ def save_train_history_image(train_history_list,
 # 参数1:批次大小
 BATCH_SIZE = 8
 # 参数2:训练数据文件路径
-train_data_file_path = "E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/ner_model/data/total.npz"
+train_data_file_path = "E:/BaiduNetdiskDownload/project/AI_doctor/offline/ner_model/data/total.npz"
 #train_data_file_path = "./data/total.npz"
 # 参数3:加载 DataLoader 数据
 data_loader, data_size = load_dataset(train_data_file_path, BATCH_SIZE)

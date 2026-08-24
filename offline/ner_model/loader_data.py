@@ -60,7 +60,7 @@ def load_dataset(data_file, batch_size):
 BATCH_SIZE = 32
 
 # 训练数据集的文件路径
-DATA_FILE = 'E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/ner_model/data/total.npz'
+DATA_FILE = 'E:/BaiduNetdiskDownload/project/AI_doctor/offline/ner_model/data/total.npz'
 
 if __name__ == '__main__':
     data_loader, data_size = load_dataset(DATA_FILE, BATCH_SIZE)

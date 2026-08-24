@@ -63,7 +63,7 @@ def data_loader(data_path, batch_size, split=0.2):
     return _loader_generator(train_data), _loader_generator(valid_data), len(train_data), len(valid_data)
 
 
-data_path = "E:/BaiduNetdiskDownload/project/AI_doctor/doctor_online/bert_server/train_data.csv"
+data_path = "E:/BaiduNetdiskDownload/project/AI_doctor/online/bert_server/train_data.csv"
 batch_size = 32
 max_len = 10
 

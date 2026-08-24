@@ -68,5 +68,5 @@ def write(path):
 
 
 if __name__ == '__main__':
-    path = "E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/structured/reviewed"
+    path = "E:/BaiduNetdiskDownload/project/AI_doctor/offline/structured/reviewed"
     write(path)

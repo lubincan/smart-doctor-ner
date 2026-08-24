@@ -57,13 +57,13 @@ def create_train_data(train_data_file, result_file, json_file, tag2id, max_lengt
     print(loaded_data.files)  # 查看文件中包含的键
     print("create_train_data Finished!".center(100, "-"))
 
-json_file = 'E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/ner_model/data/char_to_id.json'
+json_file = 'E:/BaiduNetdiskDownload/project/AI_doctor/offline/ner_model/data/char_to_id.json'
 
 # 参数2:标签码表对照字典
 tag2id = {"O": 0, "B-dis": 1, "I-dis": 2, "B-sym": 3, "I-sym": 4, "<START>": 5, "<STOP>": 6}
 
 # 参数3:训练数据文件路径
-train_data_file = 'E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/ner_model/data/total.txt'
+train_data_file = 'E:/BaiduNetdiskDownload/project/AI_doctor/offline/ner_model/data/total.txt'
 
 # 参数4:创建的npz文件保路径(训练数据)
 result_file = './data/total.npz'

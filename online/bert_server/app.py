@@ -10,7 +10,7 @@ from bert_chinese_encode import get_bert_encode
 from finetuning_net import Net
 
 # 设置训练好的模型路径
-MODEL_PATH = "E:/BaiduNetdiskDownload/project/AI_doctor/doctor_online/bert_server/model/BERT_net.pth"
+MODEL_PATH = "E:/BaiduNetdiskDownload/project/AI_doctor/online/bert_server/model/BERT_net.pth"
 
 # 定义实例化的模型参数
 embedding_size = 768

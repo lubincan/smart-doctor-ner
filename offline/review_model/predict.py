@@ -78,6 +78,6 @@ if __name__ == '__main__':
      #input_line = "小儿尿血"
      #result = predict(input_line)
      #print("result:", result)
-    input_path = "E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/structured/noreview"
+    input_path = "E:/BaiduNetdiskDownload/project/AI_doctor/offline/structured/noreview"
     output_path = "./reviewed/"
     batch_predict(input_path, output_path)

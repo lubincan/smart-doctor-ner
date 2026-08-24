@@ -12,7 +12,7 @@ matplotlib.use('TkAgg')  # 或者 use('Agg')
 import tkinter
 
 # 读取数据
-train_data_path = 'E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/review_model/train_data.csv'
+train_data_path = 'E:/BaiduNetdiskDownload/project/AI_doctor/offline/review_model/train_data.csv'
 train_data = pd.read_csv(train_data_path, header=None, sep='\t')
 
 # 打印一下正负标签比例

@@ -132,7 +132,7 @@ content = "本病是由DNA病毒的单纯疱疹病毒所致。人类单纯疱疹
 "即单纯疱疹病毒Ⅰ型（HSV-Ⅰ）遗传病和单纯疱疹病毒Ⅱ型（HSV-Ⅱ）。" \
 "即单纯疱疹病毒Ⅰ型（HSV-Ⅰ）遗传病和单纯疱疹病毒Ⅱ型（HSV-Ⅱ）。"
 # 参数2:模型保存文件路径
-model_path = "E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/ner_model/model/bilstm_crf_state_dict_20200129_210417.pt"
+model_path = "E:/BaiduNetdiskDownload/project/AI_doctor/offline/ner_model/model/bilstm_crf_state_dict_20200129_210417.pt"
 # 参数3:批次大小
 BATCH_SIZE = 8 #源代码默认是8
 # 参数4:字向量维度
@@ -147,7 +147,7 @@ OFFSET = 10
 # 参数8:标签码表对照字典
 tag_to_id = {"O": 0, "B-dis": 1, "I-dis": 2, "B-sym": 3, "I-sym": 4, "<START>": 5, "<STOP>": 6}
 # 参数9:字符码表文件路径
-char_to_id_json_path = "E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/ner_model/data/char_to_id.json"
+char_to_id_json_path = "E:/BaiduNetdiskDownload/project/AI_doctor/offline/ner_model/data/char_to_id.json"
 # 参数10:预测结果存储路径
 prediction_result_path = "prediction_result"
 # 参数11:待匹配标签类型
@@ -196,7 +196,7 @@ def batch_predict(data_path, model_path, char_to_id_json_path, batch_size, embed
 
 
 data_path = "origin_data" #等待预测的文本如上面的content内容
-#data_path='E:/BaiduNetdiskDownload/project/AI_doctor/doctor_offline/unstructured/norecognite/'
+#data_path='E:/BaiduNetdiskDownload/project/AI_doctor/offline/unstructured/norecognite/'
 
 # 进行批量预测函数的调用
 #batch_predict(data_path, model_path, char_to_id_json_path, BATCH_SIZE, EMBEDDING_DIM, HIDDEN_DIM, SENTENCE_LENGTH,OFFSET, target_type_list, prediction_result_path, tag_to_id)
