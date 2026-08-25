@@ -274,4 +274,5 @@ I-sym : 症状实体中间
 ![PyTorch](https://img.shields.io/badge/PyTorch-1.9-red)
 ![Neo4j](https://img.shields.io/badge/Neo4j-4.0-green)
 ![BERT](https://img.shields.io/badge/BERT-base--chinese-orange)
-扫码加入一起讨论技术![img.png](img.png)
+![扫码或点击链接加入一起讨论技术](https://share.note.youdao.com/s/3Hc9ju2)
+![img.png](img.png)
