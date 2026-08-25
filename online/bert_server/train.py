@@ -67,6 +67,7 @@ data_path = "E:/BaiduNetdiskDownload/project/AI_doctor/online/bert_server/train_
 batch_size = 32
 max_len = 10
 
+
 train_data_labels, valid_data_labels, train_data_length, valid_data_length = data_loader(data_path, batch_size)
 #print(next(train_data_labels))
 #print(next(valid_data_labels))

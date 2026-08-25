@@ -1,6 +1,8 @@
-# smdoctor —— AI智能医生 项目架构与知识点分析
 
-> 本项目是一个面向医疗领域的智能问答/辅助诊断系统，整体采用**离线模型训练 + 在线服务部署**的架构，涵盖命名实体识别、实体审核、知识图谱构建、语义匹配、多轮对话管理等核心模块。
+# smart-doctor —— 中文医疗NLP问答系统 | AI智能医生（NER + 知识图谱 + 多轮对话）
+# 从模型训练到服务部署的完整实践
+
+> smdoctor 是一个面向医疗领域的智能问答与辅助诊断系统，采用**离线模型训练 + 在线服务部署**的完整架构。系统基于 PyTorch 实现 BiLSTM-CRF 命名实体识别（NER），并结合 BERT 中文预训练模型进行实体审核与语义匹配；底层使用 Neo4j 图数据库构建“疾病-症状”知识图谱，最终通过 Flask + Redis 实现多轮对话管理，全面覆盖了从核心算法到工程落地的全流程。
 
 ---
 
@@ -72,32 +74,32 @@ I-sym : 症状实体中间
 
 #### 关键知识点
 
-- **CRF（条件随机场）**：通过转移矩阵建模标签之间的依赖关系，避免非法标签序列。
-- **前向算法（Forward Algorithm）**：计算所有可能路径的得分（Log-Sum-Exp 技巧保证数值稳定性）。
-- **维特比解码（Viterbi Decode）**：推理时寻找全局最优标签序列。
-- **滑动窗口预测**：长文本以 `sentence_length` 切分，相邻窗口间设置 `offset` 重叠，避免边界截断导致实体丢失。
+- **CRF（条件随机场）**：通过转移矩阵建模标签间依赖，避免非法标签序列（如 `I-dis` 紧跟 `B-sym`）。
+- **前向算法（Forward Algorithm）**：计算所有路径得分，使用 Log-Sum-Exp 保证数值稳定。
+- **维特比解码（Viterbi Decode）**：推理时寻找全局最优标签路径。
+- **滑动窗口预测**：长文本以 `sentence_length` 切分，窗口间设置 `offset` 重叠，防止边界处实体被截断丢失。
 
 ---
 
 ### 2.2 实体审核模型 — `review_model/`
 
-**目标**：对 NER 抽取出的实体进行**二分类审核**，过滤错误抽取，提升下游知识图谱质量。
+**目标**：对 NER 抽取的实体进行**二分类审核**，过滤错误结果，提升下游知识图谱质量。
 
 #### 核心方案：BERT + RNN
 
 | 文件 | 职责 |
 |------|------|
-| `bert_chinese_encode.py` | 通过 `torch.hub` 加载 `bert-base-chinese`，将文本编码为 768 维向量序列 |
+| `bert_chinese_encode.py` | 通过 `torch.hub` 加载 `bert-base-chinese`，编码为 768 维向量序列 |
 | `RNN_MODEL.py` | 自定义简单 RNN（`i2h` + `i2o` + `LogSoftmax`） |
-| `train.py` | 读取 CSV 训练数据，BERT 编码后输入 RNN，使用 `NLLLoss`，**手动梯度更新**参数 |
+| `train.py` | 读取 CSV 数据，BERT 编码后输入 RNN，使用 `NLLLoss`，**手动梯度更新** |
 | `predict.py` | 加载 `BERT_RNN.pth`，批量预测并输出审核通过的实体文件 |
-| `bilstm.py` | 独立的 BiLSTM 实现（备用/对比实验） |
+| `bilstm.py` | 独立 BiLSTM 实现（备用/对比实验） |
 
 #### 关键知识点
 
-- **预训练模型微调思路**：BERT 负责提取高质量语义特征，轻量 RNN/全连接层负责下游分类。
-- **RNN 的自定义实现**：显式拼接 `X(t)` 与 `h(t-1)`，分别经过线性层得到新的隐状态和输出。
-- **手动参数更新**：`p.data.add_(-lr, p.grad.data)`，区别于 `optimizer.step()` 的底层演示写法。
+- **预训练模型微调**：BERT 提取深层语义特征，轻量 RNN/全连接层负责分类任务。
+- **手动参数更新**：`p.data.add_(-lr, p.grad.data)` 是 `optimizer.step()` 的底层实现，帮助理解优化器本质。
+- **NLLLoss + LogSoftmax** vs **CrossEntropyLoss**：前者是后者的分解步骤，分开写便于理解概率输出过程。
 
 ---
 
@@ -115,9 +117,9 @@ I-sym : 症状实体中间
 
 #### 关键知识点
 
-- **MERGE vs CREATE**：使用 `MERGE` 防止重复节点。
-- **索引优化**：为 `Disease.name` 和 `Symptom.name` 创建索引，加速后续 `MATCH ... WHERE ...` 查询。
-- **Cypher 查询语言**：图数据库的声明式查询语法。
+- **MERGE vs CREATE**：`MERGE` 具有幂等性，防止重复创建节点。
+- **索引优化**：为 `Disease.name` 和 `Symptom.name` 建索引，加速图谱查询。
+- **Cypher 查询语言**：图数据库的声明式查询语法，与 SQL 思路不同但有对应关系。
 
 ---
 
@@ -125,22 +127,22 @@ I-sym : 症状实体中间
 
 ### 3.1 句子相关性服务 — `bert_server/`
 
-**目标**：作为独立微服务，判断用户**当前输入**与**上一轮输入**之间的语义相关性，支撑多轮对话决策。
+**目标**：独立微服务，判断用户**当前输入**与**上一轮输入**的语义相关性，支撑多轮对话决策。
 
 #### 核心方案：BERT 双句编码 + 全连接分类
 
 | 文件 | 职责 |
 |------|------|
 | `bert_chinese_encode.py` | 对 `text_1` / `text_2` 进行 BERT 编码，含 `segment_ids`、截断/填充（`max_len=10`） |
-| `finetuning_net.py` | 微调网络 `Net`：输入展平后经过 `Dropout → FC(8) → ReLU → Dropout → FC(2)` |
-| `train.py` | 训练脚本，交叉熵损失 `CrossEntropyLoss`，`SGD` 优化器，保存 Loss / Acc 曲线 |
+| `finetuning_net.py` | 微调网络：展平 → `Dropout → FC(8) → ReLU → Dropout → FC(2)` |
+| `train.py` | 训练脚本，`CrossEntropyLoss` + `SGD`，保存 Loss / Acc 曲线 |
 | `app.py` | Flask 微服务，暴露 `GET /v1/recognition/?text1=...&text2=...`，返回 `0/1` |
 
 #### 关键知识点
 
-- **句子对建模（Sentence Pair Modeling）**：利用 BERT 的 `token_type_ids`（segment embedding）区分两句话。
-- **文本截断与填充（Padding & Truncation）**：保证输入张量形状固定，适配神经网络批量计算。
-- **微服务拆分**：将语义匹配能力独立为一个服务，便于主服务按需调用、独立扩缩容。
+- **句子对建模（Sentence Pair Modeling）**：BERT 的 `token_type_ids`（segment embedding）区分两句输入。
+- **Padding & Truncation**：固定输入张量形状，适配批量计算。
+- **微服务拆分**：语义匹配独立部署，便于主服务按需调用、独立扩缩容。
 
 ---
 
@@ -152,8 +154,8 @@ I-sym : 症状实体中间
 
 | 文件 | 职责 |
 |------|------|
-| `app.py` | 主服务入口，定义 `Handler` 类处理首句/非首句逻辑，暴露 `POST /v1/main_serve/` |
-| `config.py` | 集中配置：Redis、Neo4j、bert_server 地址、超时时间、规则模板路径、会话过期时间等 |
+| `app.py` | 主服务入口，`Handler` 类处理首句/非首句逻辑，暴露 `POST /v1/main_serve/` |
+| `config.py` | 集中配置：Redis、Neo4j、bert_server 地址、超时、模板路径、会话过期时间 |
 | `test.py` | Redis 与 Neo4j 连通性测试 |
 
 #### 对话处理流程
@@ -174,10 +176,10 @@ I-sym : 症状实体中间
 
 #### 关键知识点
 
-- **多轮对话管理（Dialogue State Tracking）**：利用 Redis 的 Hash 结构存储用户维度上下文（`previous_d`、`previous`），并设置过期时间实现自动清理。
-- **服务熔断/降级**：bert_server 超时或返回空时，自动降级到百度 UNIT 对话接口，保证可用性。
-- **规则模板回复**：将查询结果填入预定义模板（如 `"根据您的描述，可能患有：%s"`），兼顾可控与自然。
-- **差集回复策略**：已回复过的疾病不再重复输出，仅将**新增**疾病返回给用户，提升体验。
+- **对话状态管理（Dialogue State Tracking）**：Redis Hash 存储用户上下文（`previous_d`、`previous`），TTL 自动过期。
+- **服务降级（Fallback）**：bert_server 超时或异常时，自动降级到百度 UNIT，保证服务可用性。
+- **规则模板回复**：查询结果填入预定义模板，兼顾可控性与自然度。
+- **差集回复策略**：已回复的疾病不重复输出，仅返回**新增**疾病，优化对话体验。
 
 ---
 
@@ -186,13 +188,13 @@ I-sym : 症状实体中间
 | 类别 | 技术/框架 | 用途 |
 |------|-----------|------|
 | 深度学习框架 | PyTorch | 模型定义、训练、推理 |
-| 预训练模型 | bert-base-chinese (HuggingFace) | 中文文本语义编码 |
-| 图数据库 | Neo4j (neo4j-driver) | 医疗知识图谱存储与查询 |
-| 缓存/会话 | Redis (redis-py) | 用户对话状态管理 |
-| Web 服务 | Flask | 在线 API 服务化 |
-| 数据科学 | NumPy, Pandas, scikit-learn, Matplotlib | 数据处理、可视化 |
-| 外部 AI | 百度 UNIT | 兜底对话/闲聊接口 |
-| 部署工具 | gunicorn / waitress | WSGI HTTP Server |
+| 预训练模型 | bert-base-chinese | 中文语义编码 |
+| 图数据库 | Neo4j | 知识图谱存储与查询 |
+| 缓存/会话 | Redis | 对话状态管理 |
+| Web 服务 | Flask | API 服务化 |
+| 数据科学 | NumPy / Pandas / scikit-learn / Matplotlib | 数据处理与可视化 |
+| 外部 AI | 百度 UNIT | 兜底对话 |
+| 部署 | gunicorn / waitress | WSGI HTTP Server |
 
 ---
 
@@ -202,48 +204,38 @@ I-sym : 症状实体中间
 
 1. **命名实体识别（NER）**
    - BIO 标注规范
-   - BiLSTM-CRF：发射分数（LSTM 输出）+ 转移分数（CRF 层）
+   - BiLSTM-CRF 架构：发射分数 + 转移分数
    - 维特比解码求最优路径
-   - 实体级别评估（Precision / Recall / F1）
+   - 实体级别 Precision / Recall / F1 评估
 
 2. **预训练语言模型应用**
-   - BERT 中文编码：`tokenizer.encode`、`last_hidden_state`
+   - BERT 编码：`tokenizer.encode`、`last_hidden_state`
    - 句子对输入：`token_type_ids` / `segment_ids`
-   - 微调策略：冻结/半冻结 BERT + 上层任务网络
+   - 微调策略：冻结底层 + 上层任务网络
 
-3. **文本分类与审核**
-   - 二分类问题建模
-   - `NLLLoss` + `LogSoftmax` vs `CrossEntropyLoss`
-   - 自定义 RNN  Cell 的实现细节
+3. **文本分类**
+   - 二分类建模
+   - `NLLLoss` + `LogSoftmax` 与 `CrossEntropyLoss` 的关系
+   - 自定义 RNN Cell 的实现
 
 ### 5.2 知识图谱
 
-1. **图数据建模**：节点（Entity）、关系（Relation）、属性（Property）
+1. **图数据建模**：节点、关系、属性
 2. **Cypher 查询**：`MATCH`、`MERGE`、`CREATE INDEX`
-3. **图谱与对话结合**：症状→疾病的多跳/单跳推理
+3. **图谱与对话结合**：症状→疾病的图推理
 
 ### 5.3 对话系统架构
 
-1. **多轮对话状态管理**：Redis Hash + TTL
-2. **语义相关性判断**：独立微服务解耦意图/语义层
-3. **兜底与降级**：外部机器人 API 作为异常/闲聊场景的安全网
-4. **规则与模型结合**：结构化查询 + 模板生成，保证医疗领域回复的严谨性
+1. **多轮状态管理**：Redis Hash + TTL
+2. **语义相关性判断**：独立微服务解耦
+3. **兜底降级**：外部 API 保障可用性
+4. **规则与模型结合**：结构化查询 + 模板生成
 
-### 5.4 工程化与服务化
+### 5.4 工程化
 
-1. **数据工程**
-   - 字符级数字化编码、Padding、滑动窗口
-   - `.npz` 高效存储大规模训练数据
-   - PyTorch `DataLoader` + `Dataset` 封装
-
-2. **服务拆分**
-   - `main_server`：业务编排、状态管理
-   - `bert_server`：语义计算、模型推理
-   - 服务间通过 HTTP 通信，配置化地址与超时
-
-3. **模型持久化**
-   - `torch.save(state_dict)` / `torch.load(state_dict)`
-   - 训练曲线可视化（Matplotlib）
+1. **数据工程**：字符级编码、Padding、滑动窗口、`.npz` 存储、`DataLoader` 封装
+2. **服务拆分**：`main_server` 业务编排 + `bert_server` 语义计算，HTTP 通信
+3. **模型持久化**：`state_dict` 保存/加载、训练曲线可视化
 
 ---
 
@@ -272,7 +264,14 @@ I-sym : 症状实体中间
 
 ---
 
-## 七、总结
+## 七、写在最后
 
-`smdoctor` 项目完整展示了从**数据预处理 → 模型训练（NER + 审核 + 语义匹配） → 知识图谱构建 → 在线服务化 → 多轮对话管理**的全链路 AI 医疗应用开发流程。其架构设计兼顾了算法深度与工程落地，适合作为医疗 NLP、对话系统、知识图谱入门的综合实践案例。
-扫码获取全部项目文档![img.png](img.png)
+这个项目从 NER 的 CRF 推导到 BERT 微调，从 Neo4j 图建模到 Redis 多轮状态管理，每一步拆开来看，都是一块值得反复咀嚼的技术拼图。如果你正在学习医疗 NLP、对话系统或者知识图谱，这个项目可以作为一条**把零散知识点串成完整链路**的参考线。
+
+我最近在整理这个项目的完整文档和代码解读，同时也持续记录自己在这条路上的踩坑与思考。如果你也在做类似方向，或者对这些技术细节有疑问、有想法，欢迎来我的知识星球一起交流。**一个人容易卡在细节里，一群人可以互相把路走宽。** 期待在那里遇见同频的你。
+
+![Python](https://img.shields.io/badge/Python-3.8-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-1.9-red)
+![Neo4j](https://img.shields.io/badge/Neo4j-4.0-green)
+![BERT](https://img.shields.io/badge/BERT-base--chinese-orange)
+扫码加入一起讨论技术![img.png](img.png)
