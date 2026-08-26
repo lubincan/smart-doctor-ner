@@ -289,4 +289,7 @@ I-sym : 症状实体中间
 
 👉 [一起聊聊技术](https://share.note.youdao.com/s/3Hc9ju2)
 
+---
+![img.png](img.png)
+
 **顺手给个 Star 吧。让我知道，这条路上不止我一个人。** 🚀
